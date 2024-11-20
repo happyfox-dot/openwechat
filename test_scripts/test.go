@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/rand"
     "time"
+	"strings"
 	"os"
 	"github.com/eatmoreapple/openwechat"
 )
@@ -56,6 +57,27 @@ func createFolderIfNotExists(folderPath string) error {
     return nil
 }
 
+
+func parseString(input string) (map[string]string, error) {
+    result := make(map[string]string)
+    // 修正这里的FieldsFunc调用，规范匿名函数写法
+    pairs := strings.FieldsFunc(input, func(r rune) bool {
+        return r == rune(' ')
+    })
+    for _, pair := range pairs {
+        parts := strings.SplitN(pair, ":", 2)
+        if len(parts)!= 2 {
+            return nil, fmt.Errorf("invalid pair: %s", pair)
+        }
+        result[parts[0]] = parts[1]
+    }
+    return result, nil
+}
+
+// define the global variable 
+var type_monitor string 
+var type_wm string
+
 func main() {
 
 	bot := openwechat.DefaultBot(openwechat.Desktop) // 桌面模式
@@ -76,6 +98,26 @@ func main() {
 		if msg.IsText() && msg.Content == "ping" {
 			msg.ReplyText("pong")
 		}
+
+		if msg.IsText() && strings.Contains(msg.Content, "cmd") {   
+			parsed, err := parseString(msg.Content)
+			type_monitor = parsed["cmd"] 
+			type_wm = parsed["type"] 
+			if err!= nil {1
+				msg.ReplyText("Error parsing string:") 
+				fmt.Println("Error parsing string:", err)
+				return
+			}
+			msg.ReplyText("successfully parsed the string, cmd: " + parsed["cmd"] + " type: " + parsed["type"]) 
+			  
+			fmt.Println("Parsed result:")
+			fmt.Println("Command:", parsed["cmd"])
+			fmt.Println("Type:", parsed["type"])
+		}
+		 
+		
+		
+
 		//  get the user name
 		friend_user , err := msg.Sender()
 		if err != nil { 
@@ -90,7 +132,8 @@ func main() {
 			randomImageName := generateRandomString(20)
 			// 拼接图像后缀，这里以.jpg 为例
 			imageNameWithSuffix := randomImageName + ".jpg"
-			file_path := save_folder +"/" + time.Now().Format("2006-01-02") +  "/" + default_name
+			file_path := save_folder +"/" + time.Now().Format("2006-01-02") +  "/" + default_name + "/" + type_monitor + "_" + type_wm 
+
 			// create the folder if not exists
 			fmt.Println("file_path:", file_path) 
 			err := createFolderIfNotExists(file_path)
